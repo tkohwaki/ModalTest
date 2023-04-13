@@ -1,0 +1,85 @@
+﻿@page "/"
+@inject IJSRuntime JS
+<PageTitle>Index</PageTitle>
+
+<button class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter">ユーザー選択</button>
+<br/>
+<span style="color:red;font-weight:bold">@mesg</span>
+<!-- Modal -->
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color:navy;color:white">
+        <h5 class="modal-title" id="exampleModalLongTitle">Modal Test</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="height:500px">
+        @if (Employees != null) {
+          <select size="20" style="width:200px" @bind="selectedEmpNo">
+            @foreach(var itm in Employees) {
+              <option value="@itm.EmpNo">@itm.Name</option>
+            }
+          </select>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" @onclick="OnCancelClick">キャンセル</button>
+        <button type="button" class="btn btn-primary" @onclick="OnOKClick">選択</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@code {
+  protected string mesg = "";
+  protected string selectedEmpNo = "";
+  protected List<Employee> Employees = null!;
+  protected override void OnInitialized() {
+    Employees = new ();
+    Dictionary<string,bool> exists = new ();
+    Random rnd = new Random();
+    for(int i=0; i < 100; i++) {
+      string EmpNo = "";
+      for(;;) {
+        EmpNo = rnd.Next(1000).ToString("0000000");
+        if (!exists.ContainsKey(EmpNo)) break;
+      }
+      string Name = "";
+      for(int j=0; j < 11; j++) {
+        if (j==1) {
+          Name += ".";
+        } else {
+          int n = rnd.Next(26);
+          string s = ((char)((int)'A'+n)).ToString();
+          if (j!=0 && j!=2) {
+            s = s.ToLower();
+          }
+          Name += s;
+        }
+      }
+      exists.Add(EmpNo,true);
+      Employee emp = new () {
+        EmpNo = EmpNo,
+        Name = Name
+      };
+      Employees.Add(emp);
+    }
+  }
+  protected async Task OnOKClick() {
+    await JS.InvokeVoidAsync("convenient.close","exampleModalCenter");
+    var emp = Employees.Where(v=>v.EmpNo == selectedEmpNo).FirstOrDefault();
+    if (emp != null) {
+      mesg = $"「{emp.EmpNo}:{emp.Name}」が選択されたよ!!";
+    }
+  }
+  protected async Task OnCancelClick() {
+    await JS.InvokeVoidAsync("convenient.close","exampleModalCenter");
+    mesg = "選択がキャンセルされたよ!!";
+  }
+  public class Employee {
+    public string EmpNo { get; set; } = null!;
+    public string Name { get; set; } = null!;
+  }
+}
